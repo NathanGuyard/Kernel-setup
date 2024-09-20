@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# Vérifier les privilèges root
-if [ "$EUID" -ne 0 ]; then
-    echo "Ce script doit être exécuté avec des privilèges root (utilisez sudo)."
-    exit
-fi
-
 # Définir le répertoire de travail comme celui où le script est lancé
 BUILD_DIR=$(pwd)
 KERNEL_DIR="$BUILD_DIR/linux-6.10.10"
@@ -74,13 +68,13 @@ if [ ! -f "$MY_INIT_LOOP_DIR/main.c" ]; then
 #include <sys/wait.h>
 
 int main() {
-    printf("ECOLE 2600 MY INIT\n");
+    printf("ECOLE 2600 MY INIT\\n");
     while (1) {
         pid_t pid = fork();
         int status = 0;
         if (pid) {
             waitpid(pid, &status, 0);
-            printf("Respawn\n");
+            printf("Respawn\\n");
         } else {
             char *tab[] = {"/usr/bin/setsid", "cttyhack", "sh", NULL};
             execv("/usr/bin/setsid", tab);
@@ -110,12 +104,12 @@ mount -t sysfs none /sys
 mount -t devtmpfs none /dev
 echo "Boot took \$(cut -d' ' -f1 /proc/uptime) seconds"
 cat <<EOF
-___________            .__           ________  _______________  _______
-\\_   _____/ ____  ____ |  |   ____   \\_____  \\/  _____/\\   _  \\ \\   _  \\
- |    __)__/ ___\\/  _ \\|  | _/ __ \\   /  ____/   __  \\ /  /_\\  \\/  /_\\  \\
- |        \\  \\__(  <_> )  |\\  ___/  /       \\  |__\\  \\\\  \\_/   \\  \\_/   \\
-/_______  /\\___  >____/|____/\\___  > \\_______ \\_____  / \\_____  /\\_____  /
-        \\/     \\/                \\/          \\/     \\/        \\/       \\/
+ ___________            .__           ________  _______________  _______
+ \\_   _____/ ____  ____ |  |   ____   \\_____  \\/  _____/\\   _  \\ \\   _  \\
+  |    __)__/ ___\\/  _ \\|  | _/ __ \\   /  ____/   __  \\ /  /_\\  \\/  /_\\  \\
+  |        \\  \\__(  <_> )  |\\  ___/  /       \\  |__\\  \\\\  \\_/   \\  \\_/   \\
+ /_______  /\\___  >____/|____/\\___  > \\_______ \\_____  / \\_____  /\\_____  /
+         \\/     \\/                \\/          \\/     \\/        \\/       \\/
 Welcome to "Ecole 2600 linux"
 EOF
 /init_loop
@@ -134,6 +128,13 @@ cp /lib/x86_64-linux-gnu/libc.so.6 "$INITRAMFS_DIR/lib/x86_64-linux-gnu/"
 cp /lib/x86_64-linux-gnu/libm.so.6 "$INITRAMFS_DIR/lib/x86_64-linux-gnu/"
 cp /lib/x86_64-linux-gnu/libresolv.so.2 "$INITRAMFS_DIR/lib/x86_64-linux-gnu/"
 cp /lib64/ld-linux-x86-64.so.2 "$INITRAMFS_DIR/lib64"
+
+# Modifier les permissions pour permettre l'accès sans sudo
+echo "Modification des permissions des fichiers et dossiers..."
+chmod -R u+rwX,go+rX "$INITRAMFS_DIR"
+chmod -R u+rwX,go+rX "$MY_INIT_LOOP_DIR"
+chmod -R u+rwX,go+rX "$BUSYBOX_DIR"
+chmod -R u+rwX,go+rX "$KERNEL_DIR"
 
 # Créer une image CPIO de l'initramfs
 echo "Création de l'image CPIO de l'initramfs..."
